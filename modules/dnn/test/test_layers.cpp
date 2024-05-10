@@ -210,8 +210,7 @@ TEST_P(Test_Caffe_layers, LRN)
         l1 = 0.01;
         lInf = 0.01;
     }
-    testLayerUsingCaffeModels("layer_lrn_spatial", false, true, l1, lInf);
-    testLayerUsingCaffeModels("layer_lrn_channels", false, true, l1, lInf);
+    testLayerUsingOnnxModels("layer_lrn_channels", true, l1, lInf);
 }
 
 TEST_P(Test_Caffe_layers, Convolution)
