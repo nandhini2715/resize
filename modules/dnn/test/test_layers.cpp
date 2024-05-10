@@ -196,7 +196,7 @@ public:
 
 TEST_P(Test_Caffe_layers, Softmax)
 {
-    testLayerUsingCaffeModels("layer_softmax");
+    testLayerUsingOnnxModels("layer_softmax");
 }
 
 TEST_P(Test_Caffe_layers, LRN)
