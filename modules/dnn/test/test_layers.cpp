@@ -222,7 +222,7 @@ TEST_P(Test_Caffe_layers, DeConvolution)
 {
     if(target == DNN_TARGET_CUDA_FP16)
         applyTestTag(CV_TEST_TAG_DNN_SKIP_CUDA_FP16);
-    testLayerUsingCaffeModels("layer_deconvolution", true, false);
+    testLayerUsingOnnxModels("layer_deconvolution", false);
 }
 
 TEST_P(Test_Caffe_layers, InnerProduct)
