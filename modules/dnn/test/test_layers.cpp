@@ -129,6 +129,69 @@ public:
             normAssert(refs[i], outs[i], "", l1 ? l1 : default_l1, lInf ? lInf : default_lInf);
         }
     }
+
+    void testLayerUsingOnnxModels(const String& basename, bool useCommonInputBlob = true, double l1 = 0.0,
+                                  double lInf = 0.0, int numInps = 1, int numOuts = 1)
+    {
+        CV_Assert_N(numInps >= 1, numInps <= 10, numOuts >= 1, numOuts <= 10);
+        String onnxmodel = _tf(basename + ".onnx");
+
+        std::vector<Mat> inps, refs, outs;
+
+        if (numInps > 1)
+        {
+            for (int i = 0; i < numInps; i++)
+            {
+                String inpfile = _tf(basename + cv::format(".input_%d.npy", i));
+                inps.push_back(blobFromNPY(inpfile));
+            }
+        }
+        else
+        {
+            String inpfile = (useCommonInputBlob) ? _tf("blob.npy") : _tf(basename + ".input.npy");
+            inps.push_back(blobFromNPY(inpfile));
+        }
+
+        if (numOuts > 1)
+        {
+            for (int i = 0; i < numOuts; i++)
+            {
+                String outfile = _tf(basename + cv::format("_%d.npy", i));
+                refs.push_back(blobFromNPY(outfile));
+            }
+        }
+        else
+        {
+            String outfile = _tf(basename + ".npy");
+            refs.push_back(blobFromNPY(outfile));
+        }
+
+        Net net = readNetFromONNX(onnxmodel);
+        ASSERT_FALSE(net.empty());
+        checkBackend(&inps[0], &refs[0]);
+
+        net.setPreferableBackend(backend);
+        net.setPreferableTarget(target);
+
+        String inp_name = "input";
+        if (numInps > 1)
+        {
+            for (int i = 0; i < numInps; i++)
+            {
+                net.setInput(inps[i], inp_name + cv::format("_%d", i));
+            }
+        }
+        else
+        {
+            net.setInput(inps.back(), inp_name);
+        }
+
+        net.forward(outs);
+        for (int i = 0; i < refs.size(); i++)
+        {
+            normAssert(refs[i], outs[i], "", l1 ? l1 : default_l1, lInf ? lInf : default_lInf);
+        }
+    }
 };
 
 TEST_P(Test_Caffe_layers, Softmax)
@@ -153,7 +216,7 @@ TEST_P(Test_Caffe_layers, LRN)
 
 TEST_P(Test_Caffe_layers, Convolution)
 {
-    testLayerUsingCaffeModels("layer_convolution", true);
+    testLayerUsingOnnxModels("layer_convolution", true);
 }
 
 TEST_P(Test_Caffe_layers, DeConvolution)
@@ -1265,7 +1328,7 @@ TEST_P(Layer_Test_Convolution_DLDT, Accuracy)
 
     ASSERT_EQ(DNN_BACKEND_INFERENCE_ENGINE_NGRAPH, backendId);
 
-    Net netDefault = readNet(_tf("layer_convolution.caffemodel"), _tf("layer_convolution.prototxt"));
+    Net netDefault = readNet(_tf("layer_convolution.onnx"));
     Net net = readNet(_tf("layer_convolution.xml"), _tf("layer_convolution.bin"));
 
     Mat inp = blobFromNPY(_tf("blob.npy"));
