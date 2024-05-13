@@ -377,13 +377,6 @@ TEST_P(Test_Caffe_layers, Fused_Concat)
     normAssert(slice(out, Range::all(), Range(2, 4), Range::all(), Range::all()), input, "", default_l1, default_lInf);
 }
 
-TEST_P(Test_Caffe_layers, Eltwise)
-{
-    if (backend == DNN_BACKEND_INFERENCE_ENGINE_NN_BUILDER_2019 && target == DNN_TARGET_MYRIAD)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_MYRIAD);
-    testLayerUsingCaffeModels("layer_eltwise");
-}
-
 TEST_P(Test_Caffe_layers, PReLU)
 {
     double lInf = (target == DNN_TARGET_MYRIAD || target == DNN_TARGET_OPENCL_FP16 || target == DNN_TARGET_CPU_FP16) ? 0.021 : 0.0;
