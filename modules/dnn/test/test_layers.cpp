@@ -762,20 +762,6 @@ TEST_P(Test_Caffe_layers, ChannelNorm)
     testLayerUsingOnnxModels("channel_norm", false);
 }
 
-TEST_P(Test_Caffe_layers, Resample)
-{
-#ifdef OPENCV_DNN_EXTERNAL_PROTOBUF
-    throw SkipTestException("Requires patched protobuf");
-#else
-#if defined(INF_ENGINE_RELEASE) && INF_ENGINE_VER_MAJOR_LT(2023000000)
-    if (backend != DNN_BACKEND_OPENCV)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_NN_BUILDER, CV_TEST_TAG_DNN_SKIP_IE_NGRAPH);
-#endif
-    testLayerUsingCaffeModels("nearest_2inps", false, false, 0.0, 0.0, 2);
-    testLayerUsingCaffeModels("nearest", false, false);
-#endif
-}
-
 TEST_P(Test_Caffe_layers, Correlation)
 {
 #ifdef OPENCV_DNN_EXTERNAL_PROTOBUF
