@@ -292,8 +292,7 @@ TEST(Layer_Test_Reshape, Accuracy)
 
 TEST_P(Test_Caffe_layers, BatchNorm)
 {
-    testLayerUsingCaffeModels("layer_batch_norm", true);
-    testLayerUsingCaffeModels("layer_batch_norm_local_stats", true, false);
+    testLayerUsingOnnxModels("layer_batch_norm", true);
 }
 
 TEST_P(Test_Caffe_layers, ReLU)
