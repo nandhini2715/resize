@@ -302,7 +302,7 @@ TEST_P(Test_Caffe_layers, ReLU)
 
 TEST_P(Test_Caffe_layers, Dropout)
 {
-    testLayerUsingCaffeModels("layer_dropout");
+    testLayerUsingOnnxModels("layer_dropout");
 }
 
 TEST_P(Test_Caffe_layers, Concat)
