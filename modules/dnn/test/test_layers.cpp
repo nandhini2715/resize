@@ -401,7 +401,7 @@ TEST_P(Test_Caffe_layers, layer_prelu_fc)
         l1 = 0.01f; lInf = 0.05f;
     }
 #endif
-    testLayerUsingCaffeModels("layer_prelu_fc", true, false, l1, lInf);
+    testLayerUsingOnnxModels("layer_prelu_fc", false, l1, lInf);
 }
 
 TEST_P(Test_Caffe_layers, Reshape_Split_Slice)
