@@ -218,11 +218,11 @@ TEST_P(Test_Caffe_layers, Convolution)
     testLayerUsingOnnxModels("layer_convolution", true);
 }
 
-TEST_P(Test_Caffe_layers, DeConvolution)
+TEST_P(Test_Caffe_layers, ConvTranspose)
 {
     if(target == DNN_TARGET_CUDA_FP16)
         applyTestTag(CV_TEST_TAG_DNN_SKIP_CUDA_FP16);
-    testLayerUsingOnnxModels("layer_deconvolution", false);
+    testLayerUsingOnnxModels("layer_conv_transpose", false);
 }
 
 TEST_P(Test_Caffe_layers, Pooling_max)
