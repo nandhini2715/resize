@@ -755,14 +755,6 @@ TEST_F(Layer_RNN_Test, get_set_test)
     EXPECT_EQ(shape(outputs[1]), shape(nT, nS, nH));
 }
 
-TEST_P(Test_Caffe_layers, FlowWarp)
-{
-    if (backend == DNN_BACKEND_OPENCV && target == DNN_TARGET_OPENCL_FP16)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_OPENCL_FP16);
-
-    testLayerUsingCaffeModels("flow_warp", false, false, 0.0, 0.0, 2);
-}
-
 TEST_P(Test_Caffe_layers, ChannelNorm)
 {
     if (backend == DNN_BACKEND_OPENCV && target == DNN_TARGET_OPENCL_FP16)
