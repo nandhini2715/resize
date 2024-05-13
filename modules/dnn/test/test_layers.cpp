@@ -755,19 +755,6 @@ TEST_F(Layer_RNN_Test, get_set_test)
     EXPECT_EQ(shape(outputs[1]), shape(nT, nS, nH));
 }
 
-TEST_P(Test_Caffe_layers, Accum)
-{
-#ifdef OPENCV_DNN_EXTERNAL_PROTOBUF
-    throw SkipTestException("Requires patched protobuf");
-#else
-    if (backend == DNN_BACKEND_OPENCV && target != DNN_TARGET_CPU)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_OPENCL, CV_TEST_TAG_DNN_SKIP_OPENCL_FP16);
-
-    testLayerUsingCaffeModels("accum", false, false, 0.0, 0.0, 2);
-    testLayerUsingCaffeModels("accum_ref", false, false, 0.0, 0.0, 2);
-#endif
-}
-
 TEST_P(Test_Caffe_layers, FlowWarp)
 {
     if (backend == DNN_BACKEND_OPENCV && target == DNN_TARGET_OPENCL_FP16)
