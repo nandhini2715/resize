@@ -326,9 +326,9 @@ TEST_P(Test_Caffe_layers, Concat)
 #endif
 
 #endif
-    testLayerUsingCaffeModels("layer_concat");
-    testLayerUsingCaffeModels("layer_concat_optim", true, false);
-    testLayerUsingCaffeModels("layer_concat_shared_input", true, false);
+    testLayerUsingOnnxModels("layer_concat");
+    testLayerUsingOnnxModels("layer_concat_optim", false);
+    testLayerUsingOnnxModels("layer_concat_shared_input", false);
 }
 
 TEST_P(Test_Caffe_layers, Fused_Concat)
