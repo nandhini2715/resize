@@ -759,7 +759,7 @@ TEST_P(Test_Caffe_layers, ChannelNorm)
 {
     if (backend == DNN_BACKEND_OPENCV && target == DNN_TARGET_OPENCL_FP16)
         applyTestTag(CV_TEST_TAG_DNN_SKIP_OPENCL_FP16);
-    testLayerUsingCaffeModels("channel_norm", false, false);
+    testLayerUsingOnnxModels("channel_norm", false);
 }
 
 TEST_P(Test_Caffe_layers, DataAugmentation)
