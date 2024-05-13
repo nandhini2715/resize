@@ -380,7 +380,7 @@ TEST_P(Test_Caffe_layers, Fused_Concat)
 TEST_P(Test_Caffe_layers, PReLU)
 {
     double lInf = (target == DNN_TARGET_MYRIAD || target == DNN_TARGET_OPENCL_FP16 || target == DNN_TARGET_CPU_FP16) ? 0.021 : 0.0;
-    testLayerUsingCaffeModels("layer_prelu", true, true, 0.0, lInf);
+    testLayerUsingOnnxModels("layer_prelu", true, 0.0, lInf);
 }
 
 // TODO: fix an unstable test case
