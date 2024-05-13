@@ -227,7 +227,7 @@ TEST_P(Test_Caffe_layers, ConvTranspose)
 
 TEST_P(Test_Caffe_layers, Pooling_max)
 {
-    testLayerUsingCaffeModels("layer_pooling_max");
+    testLayerUsingOnnxModels("layer_pooling_max");
 }
 
 TEST_P(Test_Caffe_layers, Pooling_ave)
