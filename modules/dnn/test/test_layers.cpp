@@ -297,7 +297,7 @@ TEST_P(Test_Caffe_layers, BatchNorm)
 
 TEST_P(Test_Caffe_layers, ReLU)
 {
-    testLayerUsingCaffeModels("layer_relu");
+    testLayerUsingOnnxModels("layer_relu");
 }
 
 TEST_P(Test_Caffe_layers, Dropout)
