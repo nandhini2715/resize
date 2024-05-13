@@ -235,12 +235,12 @@ TEST_P(Test_Caffe_layers, Pooling_ave)
     testLayerUsingOnnxModels("layer_pooling_ave");
 }
 
-TEST_P(Test_Caffe_layers, MVN)
+TEST_P(Test_Caffe_layers, InstanceNormalization)
 {
     if(backend == DNN_BACKEND_CUDA)
         applyTestTag(CV_TEST_TAG_DNN_SKIP_CUDA); /* MVN is unsupported */
 
-    testLayerUsingCaffeModels("layer_mvn");
+    testLayerUsingOnnxModels("layer_inst_norm");
 }
 
 void testReshape(const MatShape& inputShape, const MatShape& targetShape,
