@@ -232,7 +232,7 @@ TEST_P(Test_Caffe_layers, Pooling_max)
 
 TEST_P(Test_Caffe_layers, Pooling_ave)
 {
-    testLayerUsingCaffeModels("layer_pooling_ave");
+    testLayerUsingOnnxModels("layer_pooling_ave");
 }
 
 TEST_P(Test_Caffe_layers, MVN)
