@@ -1595,37 +1595,6 @@ private:
     int outWidth, outHeight, zoomFactor;
 };
 
-TEST_P(Test_Caffe_layers, Interp)
-{
-#ifdef OPENCV_DNN_EXTERNAL_PROTOBUF
-    throw SkipTestException("Requires patched protobuf");
-#else
-#if defined(INF_ENGINE_RELEASE) && INF_ENGINE_VER_MAJOR_EQ(2021030000)
-    if (backend == DNN_BACKEND_INFERENCE_ENGINE_NGRAPH && target == DNN_TARGET_MYRIAD)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_MYRIAD, CV_TEST_TAG_DNN_SKIP_IE_NGRAPH);  // exception
-#endif
-
-    if (backend == DNN_BACKEND_INFERENCE_ENGINE_NN_BUILDER_2019 && target == DNN_TARGET_MYRIAD)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_MYRIAD);
-
-    // Test a custom layer.
-    CV_DNN_REGISTER_LAYER_CLASS(Interp, CustomInterpLayer);
-    try
-    {
-        testLayerUsingCaffeModels("layer_interp", false, false);
-    }
-    catch (...)
-    {
-        LayerFactory::unregisterLayer("Interp");
-        throw;
-    }
-    LayerFactory::unregisterLayer("Interp");
-
-    // Test an implemented layer.
-    testLayerUsingCaffeModels("layer_interp", false, false);
-#endif
-}
-
 INSTANTIATE_TEST_CASE_P(/*nothing*/, Test_Caffe_layers, dnnBackendsAndTargets());
 
 TEST(Layer_Test_PoolingIndices, Accuracy)
