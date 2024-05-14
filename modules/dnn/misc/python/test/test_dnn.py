@@ -334,11 +334,11 @@ class dnn_test(NewOpenCVTests):
 
             printParams(backend, target)
 
-            netSync = cv.dnn.readNet(proto, model)
+            netSync = cv.dnn.readNet(model)
             netSync.setPreferableBackend(backend)
             netSync.setPreferableTarget(target)
 
-            netAsync = cv.dnn.readNet(proto, model)
+            netAsync = cv.dnn.readNet(model)
             netAsync.setPreferableBackend(backend)
             netAsync.setPreferableTarget(target)
 
