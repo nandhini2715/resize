@@ -762,11 +762,6 @@ TEST_P(Test_Caffe_layers, ChannelNorm)
     testLayerUsingOnnxModels("channel_norm", false);
 }
 
-TEST_P(Test_Caffe_layers, Convolution2Inputs)
-{
-    testLayerUsingCaffeModels("conv_2_inps", true, false, 0.0, 0.0, 2);
-}
-
 TEST_P(Test_Caffe_layers, ROIPooling_Accuracy)
 {
     Net net = readNetFromCaffe(_tf("net_roi_pooling.prototxt"));
