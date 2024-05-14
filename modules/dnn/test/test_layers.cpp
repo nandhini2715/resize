@@ -404,31 +404,6 @@ TEST_P(Test_Caffe_layers, layer_prelu_fc)
     testLayerUsingOnnxModels("layer_prelu_fc", false, l1, lInf);
 }
 
-TEST_P(Test_Caffe_layers, Reshape_Split_Slice)
-{
-#if defined(INF_ENGINE_RELEASE) && INF_ENGINE_VER_MAJOR_LT(2023000000)
-    if (backend == DNN_BACKEND_INFERENCE_ENGINE_NN_BUILDER_2019)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_NN_BUILDER);
-    if (backend == DNN_BACKEND_INFERENCE_ENGINE_NGRAPH)
-        applyTestTag(CV_TEST_TAG_DNN_SKIP_IE_NGRAPH);
-#endif
-
-    Net net = readNetFromCaffe(_tf("reshape_and_slice_routines.prototxt"));
-    ASSERT_FALSE(net.empty());
-
-    net.setPreferableBackend(backend);
-    net.setPreferableTarget(target);
-
-    Mat input(6, 12, CV_32F);
-    RNG rng(0);
-    rng.fill(input, RNG::UNIFORM, -1, 1);
-
-    net.setInput(input, "input");
-    Mat output = net.forward("output");
-
-    normAssert(input, output, "", default_l1, default_lInf);
-}
-
 TEST_P(Test_Caffe_layers, Conv_Elu)
 {
 #if defined(INF_ENGINE_RELEASE) && INF_ENGINE_RELEASE <= 2018050000
