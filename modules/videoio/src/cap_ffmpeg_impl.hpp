@@ -741,7 +741,7 @@ void CvCapture_FFMPEG::close()
     if (avio_context)
     {
         av_free(avio_context->buffer);
-        avio_context_free(&avio_context);
+        av_freep(&avio_context);
     }
 
     init();
