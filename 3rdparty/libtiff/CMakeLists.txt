@@ -272,6 +272,13 @@ set(LOGLUV_SUPPORT ${logluv})
 option(mdi "support for Microsoft Document Imaging" ON)
 set(MDI_SUPPORT ${mdi})
 
+# ZLIB
+set(ZLIB_SUPPORT 0)
+if(ZLIB_LIBRARY)
+  set(ZLIB_SUPPORT 1)
+endif()
+set(ZIP_SUPPORT ${ZLIB_SUPPORT})
+
 set(PIXARLOG_SUPPORT FALSE)
 
 # JPEG
@@ -333,6 +340,9 @@ endif()
 set(TIFF_LIBRARY_DEPS)
 if(M_LIBRARY)
   list(APPEND TIFF_LIBRARY_DEPS ${M_LIBRARY})
+endif()
+if(ZLIB_LIBRARIES)
+  list(APPEND TIFF_LIBRARY_DEPS ${ZLIB_LIBRARIES})
 endif()
 if(JPEG_LIBRARIES)
   list(APPEND TIFF_LIBRARY_DEPS ${JPEG_LIBRARIES})
@@ -451,7 +461,7 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4456 /wd4457 /wd4312) # vs2015
 ocv_warnings_disable(CMAKE_C_FLAGS /wd4267 /wd4244 /wd4018 /wd4311 /wd4312)
 
 add_library(${TIFF_LIBRARY} STATIC ${OPENCV_3RDPARTY_EXCLUDE_FROM_ALL} ${lib_srcs})
-target_link_libraries(${TIFF_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries(${TIFF_LIBRARY} ${ZLIB_LIBRARY})
 
 set_target_properties(${TIFF_LIBRARY}
     PROPERTIES
