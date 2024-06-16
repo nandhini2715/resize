@@ -1273,8 +1273,8 @@ namespace CV__SIMD_NAMESPACE {
         _vexp_y = v_mul(_vexp_y, v_reinterpret_as_f16(_vexp_mm));
 
         // exp(NAN) -> NAN
-        v_float16 mask_nan = v_ne(x, x);
-        return v_select(mask_nan, v_reinterpret_as_f16(vx_setall_s16(0x7e00)), _vexp_y);
+        v_float16 mask_not_nan = v_not_nan(x);
+        return v_select(mask_not_nan, _vexp_y, v_reinterpret_as_f16(vx_setall_s16(0x7e00)));
     }
 #endif
 
@@ -1351,8 +1351,8 @@ namespace CV__SIMD_NAMESPACE {
         _vexp_y = v_mul(_vexp_y, v_reinterpret_as_f32(_vexp_mm));
 
         // exp(NAN) -> NAN
-        v_float32 mask_nan = v_ne(x, x);
-        return v_select(mask_nan, v_reinterpret_as_f32(vx_setall_s32(0x7fc00000)), _vexp_y);
+        v_float32 mask_not_nan = v_not_nan(x);
+        return v_select(mask_not_nan, _vexp_y, v_reinterpret_as_f32(vx_setall_s32(0x7fc00000)));
     }
 
 #if CV_SIMD_64F || CV_SIMD_SCALABLE_64F
@@ -1436,8 +1436,8 @@ namespace CV__SIMD_NAMESPACE {
         _vexp_z = v_mul(_vexp_z, v_reinterpret_as_f64(_vexp_mm));
 
         // exp(NAN) -> NAN
-        v_float64 mask_nan = v_ne(x, x);
-        return v_select(mask_nan, v_reinterpret_as_f64(vx_setall_s64(0x7FF8000000000000)), _vexp_z);
+        v_float64 mask_not_nan = v_not_nan(x);
+        return v_select(mask_not_nan, _vexp_z, v_reinterpret_as_f64(vx_setall_s64(0x7FF8000000000000)));
     }
 #endif
 //! @}
