@@ -1766,7 +1766,7 @@ template<typename R> struct TheTest
     }
 
     TheTest &test_exp_fp16() {
-#if CV_SIMD128_FP16
+#if CV_SIMD_FP16
         float16_t flt16_min, flt16_max = 65504;
         uint16_t flt16_min_hex = 0x0400;
         std::memcpy(&flt16_min, &flt16_min_hex, sizeof(float16_t));
@@ -2111,7 +2111,7 @@ void test_hal_intrin_float32()
 void test_hal_intrin_float64()
 {
     DUMP_ENTRY(v_float64);
-#if CV_SIMD_64F
+#if (CV_SIMD_64F || CV_SIMD_SCALABLE_64F)
     TheTest<v_float64>()
         .test_loadstore()
         .test_addsub()

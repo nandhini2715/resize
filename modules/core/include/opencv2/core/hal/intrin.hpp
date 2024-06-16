@@ -1227,8 +1227,8 @@ namespace CV__SIMD_NAMESPACE {
 
 //! @name Exponential
 //! @{
-#if CV_SIMD128_FP16
-    // Currently only 128-bit vectors are supported. Implementation is the same as float32 vector.
+#if defined(CV_SIMD_FP16) && CV_SIMD_FP16
+    // Implementation is the same as float32 vector.
     inline v_float16 v_exp(const v_float16 &x) {
         const v_float16 _vexp_lo_f16 = vx_setall_f16(-10.7421875f);
         const v_float16 _vexp_hi_f16 = vx_setall_f16(11.f);
