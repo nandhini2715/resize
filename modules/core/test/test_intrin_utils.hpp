@@ -1704,7 +1704,7 @@ template<typename R> struct TheTest
 
         // Test special values
         std::vector<T> specialValues = {0, 1, INFINITY, -INFINITY, NAN, dataMax};
-        int specialValSize = specialValues.size();
+        int specialValSize = (int) specialValues.size();
         std::vector<Data<R>> dataVec;
         std::vector<Data<R>> resVec;
 
@@ -1723,7 +1723,7 @@ template<typename R> struct TheTest
         }
 
         // Test overflow and underflow values with step
-        const T step = 0.01;
+        const T step = (T) 0.01;
         Data<R> dataUpperBound, dataLowerBound, resOverflow, resUnderflow;
         for (T i = dataMax + 1; i <= dataMax + 11;) {
             for (int j = 0; j < n; ++j) {
@@ -1745,7 +1745,7 @@ template<typename R> struct TheTest
         for (int i = 0; i < testRandNum; i++) {
             // Generate random data in [-dataMax*1.1, dataMax*1.1], around 9% random data overflow or underflow
             for (int j = 0; j < n; ++j) {
-                dataRand[j] = 2 * (dataMax * 1.1) * (std::rand() / (double) RAND_MAX - 0.5);
+                dataRand[j] = (T) (2 * (dataMax * 1.1) * (std::rand() / (double) RAND_MAX - 0.5));
             }
             // Compare with std::exp
             resRand = v_exp(dataRand);
@@ -1770,14 +1770,14 @@ template<typename R> struct TheTest
         float16_t flt16_min, flt16_max = 65504;
         uint16_t flt16_min_hex = 0x0400;
         std::memcpy(&flt16_min, &flt16_min_hex, sizeof(float16_t));
-        return __test_exp<float16_t>(10, 1e-4, 1e-2, 1e2, flt16_min, flt16_max);
+        return __test_exp<float16_t>((float16_t) 10, (float16_t) 1e-4, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
 #else
         return *this;
 #endif
     }
 
     TheTest &test_exp_fp32() {
-        return __test_exp<float>(88.0, 1e-8, 1e-6, 1e6, FLT_MIN, FLT_MAX);
+        return __test_exp<float>(88.0f, 1e-8f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
     }
 
     TheTest &test_exp_fp64() {
