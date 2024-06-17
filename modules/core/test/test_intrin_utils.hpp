@@ -1713,13 +1713,14 @@ template<typename R> struct TheTest
             resVec.push_back(v_exp(dataVec[i]));
         }
 
-        for (int j = 0; j < n; ++j) {
-            EXPECT_EQ(1, resVec[0][j]);
-            EXPECT_COMPARE_EQ((T) M_E, resVec[1][j]);
-            EXPECT_TRUE(std::isinf(resVec[2][j]));
-            EXPECT_EQ(0, resVec[3][j]);
-            EXPECT_TRUE(std::isnan(resVec[4][j]));
-            EXPECT_LT(resVec[5][j], (T) INFINITY);
+        for (int i = 0; i < n; ++i) {
+            SCOPED_TRACE(cv::format("Special test index: %d", i));
+            EXPECT_EQ(1, resVec[0][i]);
+            EXPECT_COMPARE_EQ((T) M_E, resVec[1][i]);
+            EXPECT_TRUE(resVec[2][i] > 0 && std::isinf(resVec[2][i]));
+            EXPECT_EQ(0, resVec[3][i]);
+            EXPECT_TRUE(std::isnan(resVec[4][i]));
+            EXPECT_LT(resVec[5][i], (T) INFINITY);
         }
 
         // Test overflow and underflow values with step
@@ -1734,7 +1735,8 @@ template<typename R> struct TheTest
             resOverflow = v_exp(dataUpperBound);
             resUnderflow = v_exp(dataLowerBound);
             for (int j = 0; j < n; ++j) {
-                EXPECT_TRUE(std::isinf(resOverflow[j]));
+                SCOPED_TRACE(cv::format("Overflow/Underflow test value: %f", i));
+                EXPECT_TRUE(resOverflow[j] > 0 && std::isinf(resOverflow[j]));
                 EXPECT_EQ(0, resUnderflow[j]);
             }
         }
@@ -1750,7 +1752,7 @@ template<typename R> struct TheTest
             // Compare with std::exp
             resRand = v_exp(dataRand);
             for (int j = 0; j < n; ++j) {
-                SCOPED_TRACE(cv::format("i=%d", j));
+                SCOPED_TRACE(cv::format("Random test value: %f", dataRand[j]));
                 T std_exp = std::exp(dataRand[j]);
                 if (std::isinf(std_exp)) {
                     EXPECT_GT(resRand[j], (T) (flt_max * 0.99));
