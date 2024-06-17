@@ -723,21 +723,19 @@ Only for floating point types.*/
 OPENCV_HAL_IMPL_MATH_FUNC(v_sqrt, std::sqrt, _Tp)
 
 /**
- * @brief Exponential (\f$ e^x \f$) of elements
+ * @brief Exponential \f$ e^x \f$ of elements
  *
- * Only for floating point types. Implementation steps:
- * 1. Range Limitation**: Restrict the input values to a practical range to prevent overflow and underflow.
- *    The input range is around \f$ \ln(\text{DATATYPE\_MIN}) \f$ to \f$ \ln(\text{DATATYPE\_MAX}) \f$.
- * 2. Decompose Input: Convert the input to \f$ 2^{(x \cdot \log_2(e))} \f$ and split it into integer and fractional parts:
- *    \f$ x \cdot \log_2(e) = n + f \f$, where \f$ n \f$ is the integer part and \f$ f \f$ is the fractional part.
- * 3. Compute \f$ 2^n \f$: Calculated by shifting the bits.
- * 4. Adjust Fractional Part: Compute \f$ f \cdot \ln(2) \f$ to convert the fractional part to base \f$ e \f$.
+ * Only for floating point types. Core implementation steps:
+ * 1. Decompose Input: Convert the input to \f$ 2^{x \cdot \log_2e} \f$ and split its exponential into integer and fractional parts:
+ *    \f$ x \cdot \log_2e = n + f \f$, where \f$ n \f$ is the integer part and \f$ f \f$ is the fractional part.
+ * 2. Compute \f$ 2^n \f$: Calculated by shifting the bits.
+ * 3. Adjust Fractional Part: Compute \f$ f \cdot \ln2 \f$ to convert the fractional part to base \f$ e \f$.
  *    \f$ C1 \f$ and \f$ C2 \f$ are used to adjust the fractional part.
- * 5. Polynomial Approximation for \f$ e^{(f \cdot \ln(2))} \f$: The closer the fractional part is to 0, the more accurate the result.
+ * 4. Polynomial Approximation for \f$ e^{f \cdot \ln2} \f$: The closer the fractional part is to 0, the more accurate the result.
  *    - For float16 and float32, use a Taylor Series with 6 terms.
  *    - For float64, use a Rational Approximation with 4 terms.
- * 6. Combine Results: Multiply \f$ 2^n \f$ by \f$ e^{(f \cdot \ln(2))} \f$ to get the final result:
- *    \f$ e^x = 2^n \cdot e^{(f \cdot \ln(2))} \f$.
+ * 5. Combine Results: Multiply the two parts together to get the final result:
+ *    \f$ e^x = 2^n \cdot e^{f \cdot \ln2} \f$.
  *
  * @note The precision of the calculation depends on the implementation and the data type of the input vector.
  */
