@@ -1716,7 +1716,7 @@ template<typename R> struct TheTest
         for (int i = 0; i < n; ++i) {
             SCOPED_TRACE(cv::format("Special test index: %d", i));
             EXPECT_EQ(1, resVec[0][i]);
-            EXPECT_COMPARE_EQ((T) M_E, resVec[1][i]);
+            EXPECT_NEAR((T) M_E, resVec[1][i], 1e-15);
             EXPECT_TRUE(resVec[2][i] > 0 && std::isinf(resVec[2][i]));
             EXPECT_EQ(0, resVec[3][i]);
             EXPECT_TRUE(std::isnan(resVec[4][i]));
