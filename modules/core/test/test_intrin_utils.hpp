@@ -1698,42 +1698,41 @@ template<typename R> struct TheTest
         return *this;
     }
 
-    template<typename T>
-    void __test_exp(T dataMax, T diff_thr, T enlarge_factor, T flt_min, T flt_max) {
+    void __test_exp(LaneType dataMax,LaneType diff_thr,LaneType enlarge_factor,LaneType flt_min,LaneType flt_max) {
         int n = VTraits<R>::vlanes();
 
         // Test special values
-        std::vector<T> specialValues = {0, 1, INFINITY, -INFINITY, NAN, dataMax};
-        int specialValSize = (int) specialValues.size();
-        std::vector<Data<R>> dataVec;
+        std::vector<LaneType> specialValues = {0, 1, INFINITY, -INFINITY, NAN, dataMax};
         std::vector<Data<R>> resVec;
 
-        for (int i = 0; i < specialValSize; ++i) {
-            dataVec.push_back(Data<R>(specialValues[i]));
-            resVec.push_back(v_exp(dataVec[i]));
+        for (LaneType v : specialValues) {
+            Data<R> dataV(v);
+            R x = dataV;
+            resVec.push_back(v_exp(x));
         }
 
         for (int i = 0; i < n; ++i) {
             SCOPED_TRACE(cv::format("Special test index: %d", i));
             EXPECT_EQ(1, resVec[0][i]);
-            EXPECT_NEAR((T) M_E, resVec[1][i], 1e-15);
+            EXPECT_NEAR((LaneType) M_E, resVec[1][i], 1e-15);
             EXPECT_TRUE(resVec[2][i] > 0 && std::isinf(resVec[2][i]));
             EXPECT_EQ(0, resVec[3][i]);
             EXPECT_TRUE(std::isnan(resVec[4][i]));
-            EXPECT_LT(resVec[5][i], (T) INFINITY);
+            EXPECT_LT(resVec[5][i], (LaneType) INFINITY);
         }
 
         // Test overflow and underflow values with step
-        const T step = (T) 0.01;
-        Data<R> dataUpperBound, dataLowerBound, resOverflow, resUnderflow;
-        for (T i = dataMax + 1; i <= dataMax + 11;) {
+        const LaneType step = (LaneType) 0.01;
+        for (LaneType i = dataMax + 1; i <= dataMax + 11;) {
+            Data<R> dataUpperBound, dataLowerBound, resOverflow, resUnderflow;
             for (int j = 0; j < n; ++j) {
                 dataUpperBound[j] = i;
                 dataLowerBound[j] = -i;
                 i += step;
             }
-            resOverflow = v_exp(dataUpperBound);
-            resUnderflow = v_exp(dataLowerBound);
+            R upperBound = dataUpperBound, lowerBound = dataLowerBound;
+            resOverflow = v_exp(upperBound);
+            resUnderflow = v_exp(lowerBound);
             for (int j = 0; j < n; ++j) {
                 SCOPED_TRACE(cv::format("Overflow/Underflow test value: %f", i));
                 EXPECT_TRUE(resOverflow[j] > 0 && std::isinf(resOverflow[j]));
@@ -1743,19 +1742,20 @@ template<typename R> struct TheTest
 
         // Test random values
         const int testRandNum = 10000;
-        Data<R> dataRand, resRand;
         for (int i = 0; i < testRandNum; i++) {
+            Data<R> dataRand, resRand;
             // Generate random data in [-dataMax*1.1, dataMax*1.1], around 9% random data overflow or underflow
             for (int j = 0; j < n; ++j) {
-                dataRand[j] = (T) (2 * (dataMax * 1.1) * (std::rand() / (double) RAND_MAX - 0.5));
+                dataRand[j] = (LaneType) (2 * (dataMax * 1.1) * (std::rand() / (double) RAND_MAX - 0.5));
             }
             // Compare with std::exp
-            resRand = v_exp(dataRand);
+            R x = dataRand;
+            resRand = v_exp(x);
             for (int j = 0; j < n; ++j) {
                 SCOPED_TRACE(cv::format("Random test value: %f", dataRand[j]));
-                T std_exp = std::exp(dataRand[j]);
+                LaneType std_exp = std::exp(dataRand[j]);
                 if (std::isinf(std_exp)) {
-                    EXPECT_GT(resRand[j], (T) (flt_max * 0.99));
+                    EXPECT_GT(resRand[j], (LaneType) (flt_max * 0.99));
                 } else if(std::isinf(resRand[j])){
                     EXPECT_GT(dataRand[j], dataMax);
                 } else {
@@ -1771,19 +1771,19 @@ template<typename R> struct TheTest
         float16_t flt16_min, flt16_max = 65504;
         uint16_t flt16_min_hex = 0x0400;
         std::memcpy(&flt16_min, &flt16_min_hex, sizeof(float16_t));
-        __test_exp<float16_t>((float16_t) 10, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
+        __test_exp((float16_t) 10, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
 #endif
         return *this;
     }
 
     TheTest &test_exp_fp32() {
-        __test_exp<float>(88.0f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
+        __test_exp(88.0f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
         return *this;
     }
 
     TheTest &test_exp_fp64() {
 #if CV_SIMD_64F || CV_SIMD_SCALABLE_64F
-        __test_exp<double>(709.0, 1e-15, 1e15, DBL_MIN, DBL_MAX);
+        __test_exp(709.0, 1e-15, 1e15, DBL_MIN, DBL_MAX);
 #endif
         return *this;
     }
