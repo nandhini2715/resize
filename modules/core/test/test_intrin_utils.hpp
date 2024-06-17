@@ -1699,7 +1699,7 @@ template<typename R> struct TheTest
     }
 
     template<typename T>
-    TheTest &__test_exp(T dataMax, T diff_thr, T enlarge_factor, T flt_min, T flt_max) {
+    void __test_exp(T dataMax, T diff_thr, T enlarge_factor, T flt_min, T flt_max) {
         int n = VTraits<R>::vlanes();
 
         // Test special values
@@ -1762,7 +1762,6 @@ template<typename R> struct TheTest
                 }
             }
         }
-        return *this;
     }
 
     TheTest &test_exp_fp16() {
@@ -1770,22 +1769,21 @@ template<typename R> struct TheTest
         float16_t flt16_min, flt16_max = 65504;
         uint16_t flt16_min_hex = 0x0400;
         std::memcpy(&flt16_min, &flt16_min_hex, sizeof(float16_t));
-        return __test_exp<float16_t>((float16_t) 10, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
-#else
-        return *this;
+        __test_exp<float16_t>((float16_t) 10, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
 #endif
+        return *this;
     }
 
     TheTest &test_exp_fp32() {
-        return __test_exp<float>(88.0f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
+        __test_exp<float>(88.0f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
+        return *this;
     }
 
     TheTest &test_exp_fp64() {
 #if CV_SIMD_64F || CV_SIMD_SCALABLE_64F
-        return __test_exp<double>(709.0, 1e-15, 1e15, DBL_MIN, DBL_MAX);
-#else
-        return *this;
+        __test_exp<double>(709.0, 1e-15, 1e15, DBL_MIN, DBL_MAX);
 #endif
+        return *this;
     }
 };
 
