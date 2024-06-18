@@ -70,6 +70,13 @@
     @{
         @defgroup features2d_hal_interface Interface
     @}
+
+    @defgroup features2d_annoy Approximate Nearest Neighbors Search in Multi-Dimensional Spaces
+
+    This section documents OpenCV's interface to the Annoy. Annoy (Approximate Nearest Neighbors Oh Yeah)
+    is a library to search for points in space that are close to a given query point. It also creates
+    large read-only file-based data structures that are mmapped into memory so that many processes may
+    share the same data.
   @}
  */
 
@@ -984,7 +991,8 @@ public:
         BRUTEFORCE_L1         = 3,
         BRUTEFORCE_HAMMING    = 4,
         BRUTEFORCE_HAMMINGLUT = 5,
-        BRUTEFORCE_SL2        = 6
+        BRUTEFORCE_SL2        = 6,
+        ANNOYBASED            = 7
     };
 
     virtual ~DescriptorMatcher();
@@ -1262,6 +1270,14 @@ protected:
 
     int normType;
     bool crossCheck;
+};
+
+/** @brief Annoy-based descriptor mathcer.
+
+*/
+class CV_EXPORTS_W AnnoyBasedMatcher : public DescriptorMatcher
+{
+
 };
 
 #if defined(HAVE_OPENCV_FLANN) || defined(CV_DOXYGEN)
@@ -1579,6 +1595,83 @@ protected:
 };
 
 //! @} features2d_category
+
+/****************************************************************************************\
+*                                         Annoy                                          *
+\****************************************************************************************/
+
+//! @addtogroup features2d_annoy
+//! @{
+
+class CV_EXPORTS_W AnnoyIndex
+{
+public:
+    /** @brief Metrics used to calculate the distance between two feature vectors.
+     */
+    enum Distance
+    {
+        ANNOY_DIST_EUCLIDEAN,
+        ANNOY_DIST_MANHATTAN,
+        ANNOY_DIST_ANGULAR,
+        ANNOY_DIST_HAMMING,
+        ANNOY_DIST_DOTPRODUCT
+    };
+
+    virtual ~AnnoyIndex() = default;
+
+    /** @brief Add feature vectors to index.
+     *
+     * @param features Matrix containing the feature vectors to index. The size of the matrix is
+        num_features x feature_dimension.
+     */
+    CV_WRAP virtual void addItems(InputArray features) = 0;
+
+    /** @brief Build the index.
+     *
+     *  @param trees Number of trees in the index.
+     */
+    CV_WRAP virtual bool build(int trees) = 0;
+
+    // CV_WRAP virtual void knnSearchSingle(InputArray query, OutputArray indices, OutputArray dists, int knn, int search_k) = 0;
+
+    /** @brief Performs a K-nearest neighbor search for given query vector(s) using the index.
+     *
+     *  @param query The query vector(s).
+     *  @param indices Matrix that contains the indices of the K-nearest neighbors found. It must have
+        at least knn size.
+     *  @param dists Matrix that contains the distances to the K-nearest neighbors found. It must have
+        at least knn size.
+     *  @param knn Number of nearest neighbors to search for.
+     *  @param search_k The maximum number of nodes to inspect, which defaults to trees x knn if not provided.
+     */
+    CV_WRAP virtual void knnSearch(InputArray query, OutputArray indices, OutputArray dists, int knn, int search_k=-1) = 0;
+
+    /** @brief Save the index to disk and loads it. After saving, no more vectors can be added.
+     *
+     *  @param filename Filename of the index to be saved.
+     *  @param prefault If prefault is set to true, it will pre-read the entire file into memory (using mmap
+     *  with MAP_POPULATE). Default is false.
+     */
+    CV_WRAP virtual bool save(const String &filename, bool prefault=false) = 0;
+
+    /** @brief loads (mmaps) an index from disk.
+     *
+     *  @param filename Filename of the index to be loaded.
+     *  @param prefault If prefault is set to true, it will pre-read the entire file into memory (using mmap
+     *  with MAP_POPULATE). Default is false.
+     */
+    CV_WRAP virtual bool load(const String &filename, bool prefault=false) = 0;
+
+    /** @brief Creates an instance of annoy index class with given parameters
+     *
+     *  @param dim The dimension of the feature vector.
+     *  @param distType Metric to calculate the distance between two feature vectors, can be ANNOY_DIST_EUCLIDEAN,
+        ANNOY_DIST_MANHATTAN, ANNOY_DIST_ANGULAR, ANNOY_DIST_HAMMING, or ANNOY_DIST_DOTPRODUCT.
+     */
+    CV_WRAP static Ptr<AnnoyIndex> create(int dim, AnnoyIndex::Distance distType);
+};
+
+//! @} features2d_annoy
 
 } /* namespace cv */
 
