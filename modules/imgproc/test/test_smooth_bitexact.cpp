@@ -74,7 +74,7 @@ namespace opencv_test { namespace {
     };
 
     template <int fixedShift>
-    void checkMode(const testmode& mode)
+    void checkMode(const testmode& mode, int extra_flags = 0, double eps = 0)
     {
         int type = mode.type, depth = CV_MAT_DEPTH(type), cn = CV_MAT_CN(type);
         int dcols = mode.sz.width, drows = mode.sz.height;
@@ -120,6 +120,7 @@ namespace opencv_test { namespace {
                 Mat dst_chan(refdst.size(), CV_MAKETYPE(refdst.depth(), 1));
                 mixChannels(src_border, src_chan, fromTo, 1);
                 for (int j = 0; j < drows; j++)
+                {
                     for (int i = 0; i < dcols; i++)
                     {
                         if (depth == CV_8U)
@@ -133,19 +134,18 @@ namespace opencv_test { namespace {
                         else
                             CV_Assert(0);
                     }
+                }
                 mixChannels(dst_chan, refdst, toFrom, 1);
             }
 
-            cv::GaussianBlur(src_roi, dst, kernel, mode.sigma_x, mode.sigma_y, bordermodes[borderind]);
+            cv::GaussianBlur(src_roi, dst, kernel, mode.sigma_x, mode.sigma_y, bordermodes[borderind] | extra_flags);
 
-            EXPECT_GE(0, cvtest::norm(refdst, dst, cv::NORM_L1))
+            EXPECT_GE(eps, cvtest::norm(refdst, dst, cv::NORM_L1))
                 << "GaussianBlur " << cn << "-chan mat " << drows << "x" << dcols << " by kernel " << kernel << " sigma(" << mode.sigma_x << ";" << mode.sigma_y << ") failed with max diff " << cvtest::norm(refdst, dst, cv::NORM_INF);
         }
     }
 
-TEST(GaussianBlur_Bitexact, Linear8U)
-{
-    testmode modes[] = {
+static const testmode u8_modes[] = {
         { CV_8UC1, Size(   1,   1), Size(3, 3), 0, 0, vector<int64_t>(vU8[1], vU8[1]+3), vector<int64_t>(vU8[1], vU8[1]+3) },
         { CV_8UC1, Size(   2,   2), Size(3, 3), 0, 0, vector<int64_t>(vU8[1], vU8[1]+3), vector<int64_t>(vU8[1], vU8[1]+3) },
         { CV_8UC1, Size(   3,   1), Size(3, 3), 0, 0, vector<int64_t>(vU8[1], vU8[1]+3), vector<int64_t>(vU8[1], vU8[1]+3) },
@@ -175,15 +175,7 @@ TEST(GaussianBlur_Bitexact, Linear8U)
 #endif
     };
 
-    for (int modeind = 0, _modecnt = sizeof(modes) / sizeof(modes[0]); modeind < _modecnt; ++modeind)
-    {
-        checkMode<fixedShiftU8>(modes[modeind]);
-    }
-}
-
-TEST(GaussianBlur_Bitexact, Linear16U)
-{
-        testmode modes[] = {
+static const testmode u16_modes[] = {
         { CV_16UC1, Size(   1,   1), Size(3, 3), 0, 0, vector<int64_t>(vU16[1], vU16[1]+3), vector<int64_t>(vU16[1], vU16[1]+3) },
         { CV_16UC1, Size(   2,   2), Size(3, 3), 0, 0, vector<int64_t>(vU16[1], vU16[1]+3), vector<int64_t>(vU16[1], vU16[1]+3) },
         { CV_16UC1, Size(   3,   1), Size(3, 3), 0, 0, vector<int64_t>(vU16[1], vU16[1]+3), vector<int64_t>(vU16[1], vU16[1]+3) },
@@ -206,9 +198,37 @@ TEST(GaussianBlur_Bitexact, Linear16U)
         { CV_16UC1, Size( 256, 128), Size(9, 9), 0, 0, vector<int64_t>(vU16[4], vU16[4]+9), vector<int64_t>(vU16[4], vU16[4]+9) },
     };
 
-    for (int modeind = 0, _modecnt = sizeof(modes) / sizeof(modes[0]); modeind < _modecnt; ++modeind)
+TEST(GaussianBlur_Bitexact, Linear8U)
+{
+    for (int modeind = 0, _modecnt = sizeof(u8_modes) / sizeof(u8_modes[0]); modeind < _modecnt; ++modeind)
     {
-        checkMode<16>(modes[modeind]);
+        checkMode<fixedShiftU8>(u8_modes[modeind]);
+    }
+}
+
+TEST(GaussianBlur_Bitexact, Linear16U)
+{
+    for (int modeind = 0, _modecnt = sizeof(u16_modes) / sizeof(u16_modes[0]); modeind < _modecnt; ++modeind)
+    {
+        checkMode<16>(u16_modes[modeind]);
+    }
+}
+
+TEST(GaussianBlur_Aprox, Linear8U)
+{
+    for (int modeind = 0, _modecnt = sizeof(u8_modes) / sizeof(u8_modes[0]); modeind < _modecnt; ++modeind)
+    {
+        // eps = 143 correspnds to IPP implementation
+        checkMode<fixedShiftU8>(u8_modes[modeind], GAUSS_ALLOW_APPROXIMATIONS, 143.);
+    }
+}
+
+TEST(GaussianBlur_Aprox, Linear16U)
+{
+    for (int modeind = 0, _modecnt = sizeof(u16_modes) / sizeof(u16_modes[0]); modeind < _modecnt; ++modeind)
+    {
+        // eps = 143 correspnds to IPP implementation
+        checkMode<16>(u16_modes[modeind], GAUSS_ALLOW_APPROXIMATIONS, 143.);
     }
 }
 

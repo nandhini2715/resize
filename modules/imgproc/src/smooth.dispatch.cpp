@@ -468,7 +468,7 @@ static bool openvx_gaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
 
 #endif
 
-#if defined ENABLE_IPP_GAUSSIAN_BLUR  // see CMake's OPENCV_IPP_GAUSSIAN_BLUR option
+#ifdef ENABLE_IPP_GAUSSIAN_BLUR  // see CMake's OPENCV_IPP_GAUSSIAN_BLUR option
 
 #define IPP_DISABLE_GAUSSIAN_BLUR_LARGE_KERNELS_1TH 1
 #define IPP_DISABLE_GAUSSIAN_BLUR_16SC4_1TH 1
@@ -526,14 +526,14 @@ private:
 
 #endif
 
-static bool ipp_GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
+static bool ipp_GaussianBlur(cv::Mat& src, cv::Mat& dst, Size ksize,
                    double sigma1, double sigma2, int borderType )
 {
 #ifdef HAVE_IPP_IW
     CV_INSTRUMENT_REGION_IPP();
 
 #if IPP_VERSION_X100 < 201800 && ((defined _MSC_VER && defined _M_IX86) || (defined __GNUC__ && defined __i386__))
-    CV_UNUSED(_src); CV_UNUSED(_dst); CV_UNUSED(ksize); CV_UNUSED(sigma1); CV_UNUSED(sigma2); CV_UNUSED(borderType);
+    CV_UNUSED(src); CV_UNUSED(dst); CV_UNUSED(ksize); CV_UNUSED(sigma1); CV_UNUSED(sigma2); CV_UNUSED(borderType);
     return false; // bug on ia32
 #else
     if(sigma1 != sigma2)
@@ -548,8 +548,6 @@ static bool ipp_GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
     // Acquire data and begin processing
     try
     {
-        Mat src = _src.getMat();
-        Mat dst = _dst.getMat();
         ::ipp::IwiImage       iwSrc      = ippiGetImage(src);
         ::ipp::IwiImage       iwDst      = ippiGetImage(dst);
         ::ipp::IwiBorderSize  borderSize = ::ipp::iwiSizeToBorderSize(ippiGetSize(ksize));
@@ -589,7 +587,7 @@ static bool ipp_GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
     return true;
 #endif
 #else
-    CV_UNUSED(_src); CV_UNUSED(_dst); CV_UNUSED(ksize); CV_UNUSED(sigma1); CV_UNUSED(sigma2); CV_UNUSED(borderType);
+    CV_UNUSED(src); CV_UNUSED(dst); CV_UNUSED(ksize); CV_UNUSED(sigma1); CV_UNUSED(sigma2); CV_UNUSED(borderType);
     return false;
 #endif
 }
@@ -610,7 +608,7 @@ static bool validateGaussianBlurKernel(std::vector<T>& kernel)
 
 void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
                   double sigma1, double sigma2,
-                  int borderType)
+                  int flags)
 {
     CV_INSTRUMENT_REGION();
 
@@ -620,8 +618,11 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
     Size size = _src.size();
     _dst.create( size, type );
 
-    if( (borderType & ~BORDER_ISOLATED) != BORDER_CONSTANT &&
-        ((borderType & BORDER_ISOLATED) != 0 || !_src.getMat().isSubmatrix()) )
+    bool allow_approximations = flags & GAUSS_ALLOW_APPROXIMATIONS;
+    int borderMode = flags & ~GAUSS_ALLOW_APPROXIMATIONS;
+
+    if( (borderMode & ~BORDER_ISOLATED) != BORDER_CONSTANT &&
+        ((borderMode & BORDER_ISOLATED) != 0 || !_src.getMat().isSubmatrix()) )
     {
         if( size.height == 1 )
             ksize.height = 1;
@@ -651,10 +652,10 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
     CV_OCL_RUN(useOpenCL && sdepth == CV_8U &&
             ((ksize.width == 3 && ksize.height == 3) ||
             (ksize.width == 5 && ksize.height == 5)),
-            ocl_GaussianBlur_8UC1(_src, _dst, ksize, CV_MAT_DEPTH(type), kx, ky, borderType)
+            ocl_GaussianBlur_8UC1(_src, _dst, ksize, CV_MAT_DEPTH(type), kx, ky, borderMode)
     );
 
-    if(sdepth == CV_8U && ((borderType & BORDER_ISOLATED) || !_src.isSubmatrix()))
+    if(sdepth == CV_8U && ((borderMode & BORDER_ISOLATED) || !_src.isSubmatrix()))
     {
         std::vector<ufixedpoint16> fkx, fky;
         createGaussianKernels(fkx, fky, type, ksize, sigma1, sigma2);
@@ -674,7 +675,7 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
                     ocl_sepFilter2D_BitExact(_src, _dst, sdepth,
                             ksize,
                             (const uint16_t*)&fkx[0], (const uint16_t*)&fky[0],
-                            Point(-1, -1), 0, borderType,
+                            Point(-1, -1), 0, borderMode,
                             8/*shift_bits*/)
             );
 
@@ -689,20 +690,41 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
                 Point ofs;
                 Size wsz(src.cols, src.rows);
                 Mat src2 = src;
-                if(!(borderType & BORDER_ISOLATED))
+                if(!(borderMode & BORDER_ISOLATED))
                     src2.locateROI( wsz, ofs );
 
                 CALL_HAL(gaussianBlurBinomial, cv_hal_gaussianBlurBinomial, src2.ptr(), src2.step, dst.ptr(), dst.step, src2.cols, src2.rows, sdepth, cn,
-                         ofs.x, ofs.y, wsz.width - src2.cols - ofs.x,  wsz.height - src2.rows - ofs.y, ksize.width, borderType&~BORDER_ISOLATED);
+                         ofs.x, ofs.y, wsz.width - src2.cols - ofs.x,  wsz.height - src2.rows - ofs.y, ksize.width,
+                         borderMode & ~BORDER_ISOLATED);
             }
 
-            CV_CPU_DISPATCH(GaussianBlurFixedPoint, (src, dst, (const uint16_t*)&fkx[0], (int)fkx.size(), (const uint16_t*)&fky[0], (int)fky.size(), borderType),
+            if (allow_approximations)
+            {
+                Point ofs;
+                Size wsz(src.cols, src.rows);
+                if(!(borderMode & BORDER_ISOLATED))
+                    src.locateROI( wsz, ofs );
+
+#ifdef ENABLE_IPP_GAUSSIAN_BLUR
+                // IPP is not bit-exact to OpenCV implementation
+                CV_IPP_RUN_FAST(ipp_GaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode));
+#endif
+
+                CALL_HAL(gaussianBlur, cv_hal_gaussianBlur, src.ptr(), src.step, dst.ptr(), dst.step, src.cols, src.rows, sdepth, cn,
+                        ofs.x, ofs.y, wsz.width - src.cols - ofs.x, wsz.height - src.rows - ofs.y, ksize.width, ksize.height,
+                        sigma1, sigma2, borderMode & ~BORDER_ISOLATED);
+
+                CV_OVX_RUN(true,
+                        openvx_gaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode))
+            }
+
+            CV_CPU_DISPATCH(GaussianBlurFixedPoint, (src, dst, (const uint16_t*)&fkx[0], (int)fkx.size(), (const uint16_t*)&fky[0], (int)fky.size(), borderMode),
                 CV_CPU_DISPATCH_MODES_ALL);
 
             return;
         }
     }
-    if(sdepth == CV_16U && ((borderType & BORDER_ISOLATED) || !_src.isSubmatrix()))
+    if(sdepth == CV_16U && ((borderMode & BORDER_ISOLATED) || !_src.isSubmatrix()))
     {
         CV_LOG_INFO(NULL, "GaussianBlur: running bit-exact version...");
 
@@ -725,7 +747,7 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
             //         ocl_sepFilter2D_BitExact(_src, _dst, sdepth,
             //                 ksize,
             //                 (const uint32_t*)&fkx[0], (const uint32_t*)&fky[0],
-            //                 Point(-1, -1), 0, borderType,
+            //                 Point(-1, -1), 0, borderMode,
             //                 16/*shift_bits*/)
             // );
 
@@ -740,14 +762,34 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
                 Point ofs;
                 Size wsz(src.cols, src.rows);
                 Mat src2 = src;
-                if(!(borderType & BORDER_ISOLATED))
+                if(!(borderMode & BORDER_ISOLATED))
                     src2.locateROI( wsz, ofs );
 
                 CALL_HAL(gaussianBlurBinomial, cv_hal_gaussianBlurBinomial, src2.ptr(), src2.step, dst.ptr(), dst.step, src2.cols, src2.rows, sdepth, cn,
-                         ofs.x, ofs.y, wsz.width - src2.cols - ofs.x,  wsz.height - src2.rows - ofs.y, ksize.width, borderType&~BORDER_ISOLATED);
+                         ofs.x, ofs.y, wsz.width - src2.cols - ofs.x,  wsz.height - src2.rows - ofs.y, ksize.width, borderMode&~BORDER_ISOLATED);
             }
 
-            CV_CPU_DISPATCH(GaussianBlurFixedPoint, (src, dst, (const uint32_t*)&fkx[0], (int)fkx.size(), (const uint32_t*)&fky[0], (int)fky.size(), borderType),
+            if (allow_approximations)
+            {
+                Point ofs;
+                Size wsz(src.cols, src.rows);
+                if(!(borderMode & BORDER_ISOLATED))
+                    src.locateROI( wsz, ofs );
+
+#ifdef ENABLE_IPP_GAUSSIAN_BLUR
+                // IPP is not bit-exact to OpenCV implementation
+                CV_IPP_RUN_FAST(ipp_GaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode));
+#endif
+
+                CALL_HAL(gaussianBlur, cv_hal_gaussianBlur, src.ptr(), src.step, dst.ptr(), dst.step, src.cols, src.rows, sdepth, cn,
+                        ofs.x, ofs.y, wsz.width - src.cols - ofs.x, wsz.height - src.rows - ofs.y, ksize.width, ksize.height,
+                        sigma1, sigma2, borderMode & ~BORDER_ISOLATED);
+
+                CV_OVX_RUN(true,
+                        openvx_gaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode))
+            }
+
+            CV_CPU_DISPATCH(GaussianBlurFixedPoint, (src, dst, (const uint32_t*)&fkx[0], (int)fkx.size(), (const uint32_t*)&fky[0], (int)fky.size(), borderMode),
                 CV_CPU_DISPATCH_MODES_ALL);
 
             return;
@@ -757,7 +799,7 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
 #ifdef HAVE_OPENCL
     if (useOpenCL)
     {
-        sepFilter2D(_src, _dst, sdepth, kx, ky, Point(-1, -1), 0, borderType);
+        sepFilter2D(_src, _dst, sdepth, kx, ky, Point(-1, -1), 0, borderMode);
         return;
     }
 #endif
@@ -767,22 +809,22 @@ void GaussianBlur(InputArray _src, OutputArray _dst, Size ksize,
 
     Point ofs;
     Size wsz(src.cols, src.rows);
-    if(!(borderType & BORDER_ISOLATED))
+    if(!(borderMode & BORDER_ISOLATED))
         src.locateROI( wsz, ofs );
 
     CALL_HAL(gaussianBlur, cv_hal_gaussianBlur, src.ptr(), src.step, dst.ptr(), dst.step, src.cols, src.rows, sdepth, cn,
              ofs.x, ofs.y, wsz.width - src.cols - ofs.x, wsz.height - src.rows - ofs.y, ksize.width, ksize.height,
-             sigma1, sigma2, borderType&~BORDER_ISOLATED);
+             sigma1, sigma2, borderMode & ~BORDER_ISOLATED);
 
     CV_OVX_RUN(true,
-               openvx_gaussianBlur(src, dst, ksize, sigma1, sigma2, borderType))
+               openvx_gaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode))
 
 #if defined ENABLE_IPP_GAUSSIAN_BLUR
     // IPP is not bit-exact to OpenCV implementation
-    CV_IPP_RUN_FAST(ipp_GaussianBlur(src, dst, ksize, sigma1, sigma2, borderType));
+    CV_IPP_RUN_FAST(ipp_GaussianBlur(src, dst, ksize, sigma1, sigma2, borderMode));
 #endif
 
-    sepFilter2D(src, dst, sdepth, kx, ky, Point(-1, -1), 0, borderType);
+    sepFilter2D(src, dst, sdepth, kx, ky, Point(-1, -1), 0, borderMode);
 }
 
 } // namespace
