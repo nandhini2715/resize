@@ -1698,6 +1698,95 @@ template<typename R> struct TheTest
         return *this;
     }
 
+    void __test_exp(LaneType dataMax,LaneType diff_thr,LaneType enlarge_factor,LaneType flt_min,LaneType flt_max) {
+        int n = VTraits<R>::vlanes();
+
+        // Test special values
+        std::vector<LaneType> specialValues = {0, 1, INFINITY, -INFINITY, NAN, dataMax};
+        std::vector<Data<R>> resVec;
+
+        for (LaneType v : specialValues) {
+            Data<R> dataV(v);
+            R x = dataV;
+            resVec.push_back(v_exp(x));
+        }
+
+        for (int i = 0; i < n; ++i) {
+            SCOPED_TRACE(cv::format("Special test index: %d", i));
+            EXPECT_EQ(1, resVec[0][i]);
+            EXPECT_NEAR((LaneType) M_E, resVec[1][i], 1e-15);
+            EXPECT_TRUE(resVec[2][i] > 0 && std::isinf(resVec[2][i]));
+            EXPECT_EQ(0, resVec[3][i]);
+            EXPECT_TRUE(std::isnan(resVec[4][i]));
+            EXPECT_LT(resVec[5][i], (LaneType) INFINITY);
+        }
+
+        // Test overflow and underflow values with step
+        const LaneType step = (LaneType) 0.01;
+        for (LaneType i = dataMax + 1; i <= dataMax + 11;) {
+            Data<R> dataUpperBound, dataLowerBound, resOverflow, resUnderflow;
+            for (int j = 0; j < n; ++j) {
+                dataUpperBound[j] = i;
+                dataLowerBound[j] = -i;
+                i += step;
+            }
+            R upperBound = dataUpperBound, lowerBound = dataLowerBound;
+            resOverflow = v_exp(upperBound);
+            resUnderflow = v_exp(lowerBound);
+            for (int j = 0; j < n; ++j) {
+                SCOPED_TRACE(cv::format("Overflow/Underflow test value: %f", i));
+                EXPECT_TRUE(resOverflow[j] > 0 && std::isinf(resOverflow[j]));
+                EXPECT_EQ(0, resUnderflow[j]);
+            }
+        }
+
+        // Test random values
+        const int testRandNum = 10000;
+        for (int i = 0; i < testRandNum; i++) {
+            Data<R> dataRand, resRand;
+            // Generate random data in [-dataMax*1.1, dataMax*1.1], around 9% random data overflow or underflow
+            for (int j = 0; j < n; ++j) {
+                dataRand[j] = (LaneType) (2 * (dataMax * 1.1) * (std::rand() / (double) RAND_MAX - 0.5));
+            }
+            // Compare with std::exp
+            R x = dataRand;
+            resRand = v_exp(x);
+            for (int j = 0; j < n; ++j) {
+                SCOPED_TRACE(cv::format("Random test value: %f", dataRand[j]));
+                LaneType std_exp = std::exp(dataRand[j]);
+                if (std::isinf(std_exp)) {
+                    EXPECT_GT(resRand[j], (LaneType) (flt_max * 0.99));
+                } else if(std::isinf(resRand[j])){
+                    EXPECT_GT(dataRand[j], dataMax);
+                } else {
+                    EXPECT_GE(resRand[j], 0);
+                    EXPECT_LT(std::abs(resRand[j] - std_exp), diff_thr * (std_exp + flt_min * enlarge_factor));
+                }
+            }
+        }
+    }
+
+    TheTest &test_exp_fp16() {
+#if CV_SIMD_FP16
+        float16_t flt16_min, flt16_max = 65504;
+        uint16_t flt16_min_hex = 0x0400;
+        std::memcpy(&flt16_min, &flt16_min_hex, sizeof(float16_t));
+        __test_exp((float16_t) 10, (float16_t) 1e-2, (float16_t) 1e2, flt16_min, flt16_max);
+#endif
+        return *this;
+    }
+
+    TheTest &test_exp_fp32() {
+        __test_exp(88.0f, 1e-6f, 1e6f, FLT_MIN, FLT_MAX);
+        return *this;
+    }
+
+    TheTest &test_exp_fp64() {
+#if CV_SIMD_64F || CV_SIMD_SCALABLE_64F
+        __test_exp(709.0, 1e-15, 1e15, DBL_MIN, DBL_MAX);
+#endif
+        return *this;
+    }
 };
 
 #define DUMP_ENTRY(type) printf("SIMD%d: %s\n", 8*VTraits<v_uint8>::vlanes(), CV__TRACE_FUNCTION);
@@ -2011,6 +2100,7 @@ void test_hal_intrin_float32()
         .test_extract_highest()
         .test_broadcast_highest()
         .test_pack_triplets()
+        .test_exp_fp32()
 #if CV_SIMD_WIDTH == 32
         .test_extract<4>().test_extract<5>().test_extract<6>().test_extract<7>()
         .test_rotate<4>().test_rotate<5>().test_rotate<6>().test_rotate<7>()
@@ -2035,13 +2125,13 @@ void test_hal_intrin_float64()
         .test_mask()
         .test_unpack()
         .test_float_math()
-        .test_round_pair_f64()
         .test_float_cvt32()
         .test_reverse()
         .test_extract<0>().test_extract<1>()
         .test_rotate<0>().test_rotate<1>()
         .test_extract_n<0>().test_extract_n<1>()
         .test_extract_highest()
+        .test_exp_fp64()
         //.test_broadcast_element<0>().test_broadcast_element<1>()
 #if CV_SIMD_WIDTH == 32
         .test_extract<2>().test_extract<3>()
@@ -2062,6 +2152,7 @@ void test_hal_intrin_float16()
 #if CV_SIMD_FP16
         .test_loadstore_fp16()
         .test_float_cvt_fp16()
+        .test_exp_fp16()
 #endif
         ;
 #else
