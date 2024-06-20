@@ -858,10 +858,18 @@ The function cv::minMaxLoc finds the minimum and maximum element values and thei
 extremums are searched across the whole array or, if mask is not an empty array, in the specified
 array region.
 
-The function do not work with multi-channel arrays. If you need to find minimum or maximum
-elements across all the channels, use Mat::reshape first to reinterpret the array as
-single-channel. Or you may extract the particular channel using either extractImageCOI, or
-mixChannels, or split.
+In C++, if the input is multi-channel, you should omit the minLoc, maxLoc, and mask arguments
+(i.e. leave them as NULL, NULL, and noArray() respectively). These arguments are not
+supported for multi-channel input arrays. If working with multi-channel input and you
+need the minLoc, maxLoc, or mask arguments, then use Mat::reshape first to reinterpret
+the array as single-channel. Or you may extract the particular channel using either
+cv::extractImageCOI, cv::mixChannels, or cv::split.
+
+In Python, multi-channel input is not supported at all due to a limitation in the
+binding generation process (there is no way to set minLoc and maxLoc to NULL). A
+workaround is to operate each channel individually or to use numpy to achieve the same
+functionality.
+
 @param src input single-channel array.
 @param minVal pointer to the returned minimum value; NULL is used if not required.
 @param maxVal pointer to the returned maximum value; NULL is used if not required.
